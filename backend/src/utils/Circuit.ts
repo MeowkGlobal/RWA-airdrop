@@ -10,11 +10,15 @@ export class Circuit {
 
 	constructor(circuit: string) {
 		this.circuit = circuit;
-		this.vkey = JSON.parse(
-			readFileSync(resolve(__dirname, `../build/circuits/${circuit}/${circuit}.vkey.json`), `utf-8`)
-		);
-		this.zkeyPath = resolve(__dirname, `../build/circuits/${circuit}/${circuit}.zkey`);
-		this.wasmPath = resolve(__dirname, `../build/circuits/${circuit}/${circuit}.wasm`);
+		const basePath = __dirname.includes('dist') 
+        ? '../../build/circuits' 
+        : '../build/circuits';
+    
+    this.vkey = JSON.parse(
+        readFileSync(resolve(__dirname, `${basePath}/${circuit}.vkey.json`), 'utf-8')
+    );
+    this.zkeyPath = resolve(__dirname, `${basePath}/${circuit}.zkey`);
+    this.wasmPath = resolve(__dirname, `${basePath}/${circuit}.wasm`);
 	}
 
 	async generateProof(inputs: any): Promise<any> {
@@ -25,7 +29,7 @@ export class Circuit {
 				return { proofJson: proof, proofCalldata: proofCalldata, publicSignals: publicSignals };
 		} catch (error) {
 			console.log("Error while generating Proof : ", error);
-			return { error: "Equity Threshold not met" };
+			throw new Error("Equity Thresholds not met");
 		}
 	}
 
