@@ -13,6 +13,16 @@ import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 import { getDefaultExternalAdapters } from '@web3auth/default-evm-adapter';
 import { Web3Auth, Web3AuthOptions } from '@web3auth/modal';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 import RPC from './ethersRPC';
 import { Button } from '@/components/ui/button';
@@ -56,12 +66,28 @@ const web3AuthOptions: Web3AuthOptions = {
 const web3auth = new Web3Auth(web3AuthOptions);
 
 export default function Home() {
+  const router = useRouter();
   const [provider, setProvider] = useState<IProvider | null>(null);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [isRobinhoodConnected, setIsRobinhoodConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [holdings, setHoldings] = useState<
+    Array<{
+      symbol: string;
+      noOfShares: number;
+      lastHoldingTime: string;
+    }>
+  >([]);
 
   useEffect(() => {
     const init = async () => {
+      setIsLoading(true);
+      if (sessionStorage.getItem('loggedIn') === 'true') {
+        setLoggedIn(true);
+        sessionStorage.removeItem('loggedIn');
+      }
       try {
+        console.log('init started');
         const adapters = await getDefaultExternalAdapters({
           options: web3AuthOptions,
         });
@@ -69,13 +95,26 @@ export default function Home() {
           web3auth.configureAdapter(adapter);
         });
         await web3auth.initModal();
-        setProvider(web3auth.provider);
+        const web3authProvider = web3auth.provider;
+        setProvider(web3authProvider);
+        console.log('web3auth started');
 
-        if (web3auth.connected) {
+        if (web3auth.connected && web3authProvider) {
           setLoggedIn(true);
+          await checkRobinhoodConnection(web3authProvider);
+
+          console.log('checkRobinhoodConnection done');
+
+          const rhUserId = sessionStorage.getItem('rhUserId');
+          if (rhUserId) {
+            await createRobinhoodConnection(rhUserId, web3authProvider);
+            sessionStorage.removeItem('rhUserId');
+          }
         }
       } catch (error) {
         console.error(error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -100,6 +139,11 @@ export default function Home() {
     setProvider(null);
     setLoggedIn(false);
     uiConsole('logged out');
+  };
+
+  // Redirect to the Robinhood page
+  const redirectToRobinhood = () => {
+    router.push('/rh/login');
   };
 
   // Check the RPC file for the implementation
@@ -148,6 +192,128 @@ export default function Home() {
     }
   }
 
+  const fetchHoldings = async (walletAddress: string) => {
+    try {
+      const response = await fetch('/api/get-holdings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ walletAddress }),
+      });
+      const data = await response.json();
+      setHoldings(data.holdings);
+    } catch (error) {
+      console.error('Error fetching holdings:', error);
+    }
+  };
+
+  const checkRobinhoodConnection = async (currentProvider: IProvider) => {
+    try {
+      const address = await RPC.getAccounts(currentProvider);
+      console.log('checkRobinhoodConnection address', address);
+      const response = await fetch('/api/check-robinhood-connection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ walletAddress: address }),
+      });
+
+      const data = await response.json();
+      setIsRobinhoodConnected(data.isActive);
+      if (data.isActive) {
+        await fetchHoldings(address);
+      }
+    } catch (error) {
+      console.error('Error checking Robinhood connection:', error);
+    }
+  };
+
+  const createRobinhoodConnection = async (
+    userId: string,
+    currentProvider: IProvider
+  ) => {
+    try {
+      const address = await RPC.getAccounts(currentProvider);
+      console.log('createRobinhoodConnection address', address);
+      const response = await fetch('/api/create-robinhood-connection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          walletAddress: address,
+        }),
+      });
+
+      if (response.ok) {
+        setIsRobinhoodConnected(true);
+      }
+    } catch (error) {
+      console.error('Error creating Robinhood connection:', error);
+    }
+  };
+
+  const robinhoodButton = isRobinhoodConnected ? (
+    <Button
+      className="flex w-[50%] h-[50px] mx-auto mt-[5%] mb-[5%]"
+      variant="secondary"
+      disabled
+    >
+      Connected to the Robinhood Trading Account
+    </Button>
+  ) : (
+    <Button
+      className="flex w-[50%] h-[50px] mx-auto mt-[5%] mb-[5%]"
+      onClick={redirectToRobinhood}
+    >
+      Connect to the Robinhood Trading Account
+    </Button>
+  );
+
+  const holdingsTable = (
+    <>
+      <div className="flex flex-col gap-4">
+        <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
+          Your Holdings
+        </h2>
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">Symbol</TableHead>
+            <TableHead>No. of Shares</TableHead>
+            <TableHead>Last bought on</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {holdings.length > 0 ? (
+            holdings.map((holding, index) => (
+              <TableRow key={index}>
+                <TableCell className="font-medium">{holding.symbol}</TableCell>
+                <TableCell>{holding.noOfShares}</TableCell>
+                <TableCell>
+                  {new Date(holding.lastHoldingTime).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                  <Button className="bg-green-500">Avail Airdrop</Button>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={3} className="text-center">
+                No holdings found
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </>
+  );
+
   const loggedInView = (
     <>
       <header className="flex h-20 w-full shrink-0 items-center px-4 md:px-6">
@@ -159,38 +325,36 @@ export default function Home() {
           <Button onClick={logout}>Log Out</Button>
         </div>
       </header>
-      <Button
-        className="flex w-[50%] h-[50px] mx-auto mt-[10%] mb-[10%]"
-        onClick={() => console.log('Connect to Robinhood clicked')}
-      >
-        Connect to the Robinhood Trading Account
-      </Button>
-      <Card className="w-full">
-        <CardHeader className="flex justify-center text-center">
-          <CardTitle>Logged in user details</CardTitle>
-          <CardDescription>User information</CardDescription>
-        </CardHeader>
-        <CardContent className="flex justify-between mt-10">
-          <Button onClick={getUserInfo}>Get User Info</Button>
-          <Button onClick={getAccounts}>Get Accounts</Button>
-          <Button onClick={getBalance}>Get Balance</Button>
-          <Button onClick={signMessage}>Sign Message</Button>
-          <Button onClick={sendTransaction}>Send Transaction</Button>
-        </CardContent>
-        <CardFooter></CardFooter>
-      </Card>
-      <Card className="w-1/3 mt-10 mx-auto">
-        <CardHeader className="flex justify-center text-center">
-          <CardTitle>Debug Console</CardTitle>
-          <CardDescription></CardDescription>
-        </CardHeader>
-        <CardContent className="flex justify-center">
-          <div id="console" style={{ whiteSpace: 'pre-line' }}>
-            <p style={{ whiteSpace: 'pre-line' }}></p>
-          </div>
-        </CardContent>
-        <CardFooter></CardFooter>
-      </Card>
+      {robinhoodButton}
+      {holdingsTable}
+      <div className="justify-center mt-20">
+        <Card className="w-full">
+          <CardHeader className="flex justify-center text-center">
+            <CardTitle>Logged in user details</CardTitle>
+            <CardDescription>User information</CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-between mt-10">
+            <Button onClick={getUserInfo}>Get User Info</Button>
+            <Button onClick={getAccounts}>Get Accounts</Button>
+            <Button onClick={getBalance}>Get Balance</Button>
+            <Button onClick={signMessage}>Sign Message</Button>
+            <Button onClick={sendTransaction}>Send Transaction</Button>
+          </CardContent>
+          <CardFooter></CardFooter>
+        </Card>
+        <Card className="w-1/3 mt-10 mx-auto">
+          <CardHeader className="flex justify-center text-center">
+            <CardTitle>Debug Console</CardTitle>
+            <CardDescription></CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <div id="console" style={{ whiteSpace: 'pre-line' }}>
+              <p style={{ whiteSpace: 'pre-line' }}></p>
+            </div>
+          </CardContent>
+          <CardFooter></CardFooter>
+        </Card>
+      </div>
     </>
   );
 
@@ -208,17 +372,13 @@ export default function Home() {
 
   return (
     <div className="container flex flex-col h-screen mx-auto">
-      <div>{loggedIn ? loggedInView : unloggedInView}</div>
-
-      {/* <footer className="footer">
-        <a
-          href="https://github.com/Web3Auth/web3auth-pnp-examples/tree/main/web-modal-sdk/quick-starts/nextjs-modal-quick-start"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Source code
-        </a>
-      </footer> */}
+      {isLoading ? (
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        </div>
+      ) : (
+        <div>{loggedIn ? loggedInView : unloggedInView}</div>
+      )}
     </div>
   );
 }
