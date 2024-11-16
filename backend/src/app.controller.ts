@@ -26,7 +26,7 @@ export class AppController {
       stockQuantityThreshold: BigInt(process.env.STOCK_QUANTITY_THRESHOLD),
       stockBuyTimestamp: BigInt(Math.floor(new Date(generateZkProofDto.stockBuyTimestamp).getTime() / 1000)),
       currentTimestamp: BigInt(Math.floor(Date.now() / 1000)),
-      holdingPeriodThreshold: BigInt(rocess.env.HOLDING_PERIOD_THRESHOLD_DAYS * 86400),
+      holdingPeriodThreshold: BigInt(Number(process.env.HOLDING_PERIOD_THRESHOLD_DAYS) * 86400),
       hash: null
     }
 
