@@ -3,9 +3,11 @@ import { IsNotEmpty, IsString } from 'class-validator';
 export class GenerateZkProofDto {
     @IsNotEmpty()
     @IsString()
-    publicInput: string;
+    address: string;
   
     @IsNotEmpty()
-    @IsString()
-    privateInput: string;
+    stockQuantity: string;
+
+    @IsNotEmpty()
+    stockBuyTimestamp: string;
   }

@@ -18,10 +18,15 @@ export class Circuit {
 	}
 
 	async generateProof(inputs: any): Promise<any> {
-		const { proof, publicSignals } = await plonk.fullProve(inputs, this.wasmPath, this.zkeyPath);
-		let proofCalldata = await plonk.exportSolidityCallData(proof, publicSignals);
-		proofCalldata = proofCalldata.split(",")[0].toString();
-		return { proofJson: proof, proofCalldata: proofCalldata, publicSignals: publicSignals };
+		try{
+			const { proof, publicSignals } = await plonk.fullProve(inputs, this.wasmPath, this.zkeyPath);
+			let proofCalldata = await plonk.exportSolidityCallData(proof, publicSignals);
+			proofCalldata = proofCalldata.split(",")[0].toString();
+				return { proofJson: proof, proofCalldata: proofCalldata, publicSignals: publicSignals };
+		} catch (error) {
+			console.log("Error while generating Proof : ", error);
+			return { error: "Equity Threshold not met" };
+		}
 	}
 
 	async verifyProof(proofJson: any, publicSignals: any): Promise<boolean> {
