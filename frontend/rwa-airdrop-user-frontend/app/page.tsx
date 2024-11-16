@@ -27,14 +27,14 @@ import RPC from './ethersRPC';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { MountainIcon } from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+// import {
+//   Card,
+//   CardContent,
+//   CardDescription,
+//   CardFooter,
+//   CardHeader,
+//   CardTitle,
+// } from '@/components/ui/card';
 import { ethers } from 'ethers';
 import { AIRDROP_CONTRACT_ABI } from '@/constants/contractABI';
 
@@ -152,10 +152,10 @@ export default function Home() {
     }
   };
 
-  const getUserInfo = async () => {
-    const user = await web3auth.getUserInfo();
-    uiConsole(user);
-  };
+  // const getUserInfo = async () => {
+  //   const user = await web3auth.getUserInfo();
+  //   uiConsole(user);
+  // };
 
   const logout = async () => {
     await web3auth.logout();
@@ -169,43 +169,43 @@ export default function Home() {
     router.push('/rh/login');
   };
 
-  // Check the RPC file for the implementation
-  const getAccounts = async () => {
-    if (!provider) {
-      uiConsole('provider not initialized yet');
-      return;
-    }
-    const address = await RPC.getAccounts(provider);
-    uiConsole(address);
-  };
+  // // Check the RPC file for the implementation
+  // const getAccounts = async () => {
+  //   if (!provider) {
+  //     uiConsole('provider not initialized yet');
+  //     return;
+  //   }
+  //   const address = await RPC.getAccounts(provider);
+  //   uiConsole(address);
+  // };
 
-  const getBalance = async () => {
-    if (!provider) {
-      uiConsole('provider not initialized yet');
-      return;
-    }
-    const balance = await RPC.getBalance(provider);
-    uiConsole(balance);
-  };
+  // const getBalance = async () => {
+  //   if (!provider) {
+  //     uiConsole('provider not initialized yet');
+  //     return;
+  //   }
+  //   const balance = await RPC.getBalance(provider);
+  //   uiConsole(balance);
+  // };
 
-  const signMessage = async () => {
-    if (!provider) {
-      uiConsole('provider not initialized yet');
-      return;
-    }
-    const signedMessage = await RPC.signMessage(provider);
-    uiConsole(signedMessage);
-  };
+  // const signMessage = async () => {
+  //   if (!provider) {
+  //     uiConsole('provider not initialized yet');
+  //     return;
+  //   }
+  //   const signedMessage = await RPC.signMessage(provider);
+  //   uiConsole(signedMessage);
+  // };
 
-  const sendTransaction = async () => {
-    if (!provider) {
-      uiConsole('provider not initialized yet');
-      return;
-    }
-    uiConsole('Sending Transaction...');
-    const transactionReceipt = await RPC.sendTransaction(provider);
-    uiConsole(transactionReceipt);
-  };
+  // const sendTransaction = async () => {
+  //   if (!provider) {
+  //     uiConsole('provider not initialized yet');
+  //     return;
+  //   }
+  //   uiConsole('Sending Transaction...');
+  //   const transactionReceipt = await RPC.sendTransaction(provider);
+  //   uiConsole(transactionReceipt);
+  // };
 
   function uiConsole(...args: unknown[]): void {
     const el = document.querySelector('#console>p');
@@ -340,7 +340,7 @@ export default function Home() {
 
   const robinhoodButton = isRobinhoodConnected ? (
     <Button
-      className="flex w-[50%] h-[50px] mx-auto mt-[5%] mb-[5%]"
+      className="flex w-[50%] h-[50px] mx-auto mt-[5%] mb-[5%] border-2 border-green-500"
       variant="secondary"
       disabled
     >
@@ -357,47 +357,52 @@ export default function Home() {
 
   const holdingsTable = (
     <>
-      <div className="flex flex-col gap-4">
-        <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
-          Your Holdings
-        </h2>
-      </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[100px]">Symbol</TableHead>
-            <TableHead>No. of Shares</TableHead>
-            <TableHead>Last bought on</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {holdings.length > 0 ? (
-            holdings.map((holding, index) => (
-              <TableRow key={index}>
-                <TableCell className="font-medium">{holding.symbol}</TableCell>
-                <TableCell>{holding.noOfShares}</TableCell>
-                <TableCell>
-                  {new Date(holding.lastHoldingTime).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    className="bg-green-500"
-                    onClick={() => claimAirdrop(holding)}
-                  >
-                    Avail Airdrop
-                  </Button>
+      <div className="w-[80%] mx-auto">
+        <div className="flex flex-col gap-4">
+          <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
+            Your Holdings
+          </h2>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Symbol</TableHead>
+              <TableHead>No. of Shares</TableHead>
+              <TableHead>Last bought on</TableHead>
+              <TableHead className="w-[10%]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {holdings.length > 0 ? (
+              holdings.map((holding, index) => (
+                <TableRow key={index}>
+                  <TableCell className="font-medium">
+                    {holding.symbol}
+                  </TableCell>
+                  <TableCell>{holding.noOfShares}</TableCell>
+                  <TableCell>
+                    {new Date(holding.lastHoldingTime).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      className="bg-green-500"
+                      onClick={() => claimAirdrop(holding)}
+                    >
+                      Avail Airdrop
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center">
+                  No holdings found
                 </TableCell>
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={3} className="text-center">
-                No holdings found
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </>
   );
 
@@ -414,7 +419,7 @@ export default function Home() {
       </header>
       {robinhoodButton}
       {holdingsTable}
-      <div className="justify-center mt-20">
+      {/* <div className="justify-center mt-20">
         <Card className="w-full">
           <CardHeader className="flex justify-center text-center">
             <CardTitle>Logged in user details</CardTitle>
@@ -441,7 +446,7 @@ export default function Home() {
           </CardContent>
           <CardFooter></CardFooter>
         </Card>
-      </div>
+      </div> */}
     </>
   );
 
