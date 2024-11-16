@@ -1,101 +1,224 @@
-import Image from "next/image";
+/* eslint-disable @typescript-eslint/no-use-before-define */
+/* eslint-disable no-console */
+
+'use client';
+
+import {
+  CHAIN_NAMESPACES,
+  IAdapter,
+  IProvider,
+  WEB3AUTH_NETWORK,
+} from '@web3auth/base';
+import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
+import { getDefaultExternalAdapters } from '@web3auth/default-evm-adapter';
+import { Web3Auth, Web3AuthOptions } from '@web3auth/modal';
+import { useEffect, useState } from 'react';
+
+import RPC from './ethersRPC';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { MountainIcon } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+
+// const clientId = process.env.WEB3AUTH_CLIENT_ID;
+const clientId =
+  'BF98f4BCXkt9o9282xQgfnfxf77U_cJqSWNF5ZtOY-aqO4SAqPpy-aE-sn9s-tw-mTnz2HE9i5Dm5l_f0BL4TPQ';
+
+const chainConfig = {
+  chainNamespace: CHAIN_NAMESPACES.EIP155,
+  chainId: '0x89', // hex of 137, polygon mainnet
+  rpcTarget: 'https://rpc.ankr.com/polygon',
+  // Avoid using public rpcTarget in production.
+  // Use services like Infura, Quicknode etc
+  displayName: 'Polygon Mainnet',
+  blockExplorerUrl: 'https://polygonscan.com',
+  ticker: 'POL',
+  tickerName: 'Polygon Ecosystem Token',
+  logo: 'https://cryptologos.cc/logos/polygon-matic-logo.png',
+};
+
+const privateKeyProvider = new EthereumPrivateKeyProvider({
+  config: { chainConfig },
+});
+
+const web3AuthOptions: Web3AuthOptions = {
+  clientId: clientId || '', // Provide default empty string if undefined
+  web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
+  privateKeyProvider,
+};
+const web3auth = new Web3Auth(web3AuthOptions);
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [provider, setProvider] = useState<IProvider | null>(null);
+  const [loggedIn, setLoggedIn] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const adapters = await getDefaultExternalAdapters({
+          options: web3AuthOptions,
+        });
+        adapters.forEach((adapter: IAdapter<unknown>) => {
+          web3auth.configureAdapter(adapter);
+        });
+        await web3auth.initModal();
+        setProvider(web3auth.provider);
+
+        if (web3auth.connected) {
+          setLoggedIn(true);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    init();
+  }, []);
+
+  const login = async () => {
+    const web3authProvider = await web3auth.connect();
+    setProvider(web3authProvider);
+    if (web3auth.connected) {
+      setLoggedIn(true);
+    }
+  };
+
+  const getUserInfo = async () => {
+    const user = await web3auth.getUserInfo();
+    uiConsole(user);
+  };
+
+  const logout = async () => {
+    await web3auth.logout();
+    setProvider(null);
+    setLoggedIn(false);
+    uiConsole('logged out');
+  };
+
+  // Check the RPC file for the implementation
+  const getAccounts = async () => {
+    if (!provider) {
+      uiConsole('provider not initialized yet');
+      return;
+    }
+    const address = await RPC.getAccounts(provider);
+    uiConsole(address);
+  };
+
+  const getBalance = async () => {
+    if (!provider) {
+      uiConsole('provider not initialized yet');
+      return;
+    }
+    const balance = await RPC.getBalance(provider);
+    uiConsole(balance);
+  };
+
+  const signMessage = async () => {
+    if (!provider) {
+      uiConsole('provider not initialized yet');
+      return;
+    }
+    const signedMessage = await RPC.signMessage(provider);
+    uiConsole(signedMessage);
+  };
+
+  const sendTransaction = async () => {
+    if (!provider) {
+      uiConsole('provider not initialized yet');
+      return;
+    }
+    uiConsole('Sending Transaction...');
+    const transactionReceipt = await RPC.sendTransaction(provider);
+    uiConsole(transactionReceipt);
+  };
+
+  function uiConsole(...args: unknown[]): void {
+    const el = document.querySelector('#console>p');
+    if (el) {
+      el.innerHTML = JSON.stringify(args || {}, null, 2);
+      console.log(...args);
+    }
+  }
+
+  const loggedInView = (
+    <>
+      <header className="flex h-20 w-full shrink-0 items-center px-4 md:px-6">
+        <Link href="#" className="mr-6 hidden lg:flex" prefetch={false}>
+          <MountainIcon className="h-6 w-6" />
+          <h1 className="ml-2">MeokGlobal</h1>
+        </Link>
+        <div className="ml-auto flex gap-2">
+          <Button onClick={logout}>Log Out</Button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
+      </header>
+      <Button
+        className="flex w-[50%] h-[50px] mx-auto mt-[10%] mb-[10%]"
+        onClick={() => console.log('Connect to Robinhood clicked')}
+      >
+        Connect to the Robinhood Trading Account
+      </Button>
+      <Card className="w-full">
+        <CardHeader className="flex justify-center text-center">
+          <CardTitle>Logged in user details</CardTitle>
+          <CardDescription>User information</CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-between mt-10">
+          <Button onClick={getUserInfo}>Get User Info</Button>
+          <Button onClick={getAccounts}>Get Accounts</Button>
+          <Button onClick={getBalance}>Get Balance</Button>
+          <Button onClick={signMessage}>Sign Message</Button>
+          <Button onClick={sendTransaction}>Send Transaction</Button>
+        </CardContent>
+        <CardFooter></CardFooter>
+      </Card>
+      <Card className="w-1/3 mt-10 mx-auto">
+        <CardHeader className="flex justify-center text-center">
+          <CardTitle>Debug Console</CardTitle>
+          <CardDescription></CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-center">
+          <div id="console" style={{ whiteSpace: 'pre-line' }}>
+            <p style={{ whiteSpace: 'pre-line' }}></p>
+          </div>
+        </CardContent>
+        <CardFooter></CardFooter>
+      </Card>
+    </>
+  );
+
+  const unloggedInView = (
+    <header className="flex h-20 w-full shrink-0 items-center px-4 md:px-6">
+      <Link href="#" className="mr-6 hidden lg:flex" prefetch={false}>
+        <MountainIcon className="h-6 w-6" />
+        <h1 className="ml-2">MeokGlobal</h1>
+      </Link>
+      <div className="ml-auto flex gap-2">
+        <Button onClick={login}>Login</Button>
+      </div>
+    </header>
+  );
+
+  return (
+    <div className="container flex flex-col h-screen mx-auto">
+      <div>{loggedIn ? loggedInView : unloggedInView}</div>
+
+      {/* <footer className="footer">
         <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          href="https://github.com/Web3Auth/web3auth-pnp-examples/tree/main/web-modal-sdk/quick-starts/nextjs-modal-quick-start"
           target="_blank"
           rel="noopener noreferrer"
         >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
+          Source code
         </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </footer> */}
     </div>
   );
 }
