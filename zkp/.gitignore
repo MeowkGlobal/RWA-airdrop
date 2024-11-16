@@ -1,0 +1,6 @@
+circuits/build/
+node_modules/
+artifacts/
+cache/
+build/
+typechain-types/
