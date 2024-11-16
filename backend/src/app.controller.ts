@@ -38,11 +38,19 @@ export class AppController {
 
     const EquityProof = new Circuit("EquityProof");
     console.log("Printing inputs : ", inputs);
-    const { proofJson } = await EquityProof.generateProof(inputs);
+    const { proofCalldata } = await EquityProof.generateProof(inputs);
+
+    const publicInputs : string[] = [
+      inputs.address.toString(),
+      inputs.stockQuantityThreshold.toString(),
+      inputs.currentTimestamp.toString(),
+      inputs.holdingPeriodThreshold.toString(),
+      hash.toString()
+  ] 
 
     return {
         statusCode: HttpStatus.CREATED,
-        data: proofJson,
+        data: {proof: proofCalldata, publicInputs: publicInputs},
         message: 'ZK proof generated successfully'
     };
   } catch(error){
