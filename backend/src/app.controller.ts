@@ -15,29 +15,20 @@ import { Circuit } from './utils/Circuit';
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
-  }
-
   //This API is used to generate the zk proof for the equity airdrop
   @Post('api/v1/generateZkProof')
   async generateZkProof(@Body() generateZkProofDto: GenerateZkProofDto) {
-    try {
-      //Creating the input to generate the zk hash
-      const inputs = {
-        address: BigInt(generateZkProofDto.address),
-        stockQuantity: BigInt(generateZkProofDto.stockQuantity),
-        stockQuantityThreshold: BigInt(process.env.STOCK_QUANTITY_THRESHOLD),
-        stockBuyTimestamp: BigInt(
-          Math.floor(
-            new Date(generateZkProofDto.stockBuyTimestamp).getTime() / 1000
-          )
-        ),
-        currentTimestamp: BigInt(Math.floor(Date.now() / 1000)),
-        holdingPeriodThreshold: BigInt(300),
-        hash: null,
-      };
+  try {
+    //Creating the input to generate the zk hash 
+    const inputs = {
+      address: BigInt(generateZkProofDto.address),
+      stockQuantity: BigInt(generateZkProofDto.stockQuantity),
+      stockQuantityThreshold: BigInt(process.env.STOCK_QUANTITY_THRESHOLD),
+      stockBuyTimestamp: BigInt(Math.floor(new Date(generateZkProofDto.stockBuyTimestamp).getTime() / 1000)),
+      currentTimestamp: BigInt(Math.floor(Date.now() / 1000)),
+      holdingPeriodThreshold: BigInt(rocess.env.HOLDING_PERIOD_THRESHOLD_DAYS * 86400),
+      hash: null
+    }
 
       //Creating the hash
       const hash = await poseidon([
