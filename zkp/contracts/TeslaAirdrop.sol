@@ -21,6 +21,9 @@ contract TeslaAirdrop {
     uint256 _holdingPeriodThreshold;
     uint256 _stockPriceThreshold;
 
+    // Mapping for users who've already claimed airdrop
+    mapping (bytes32 userHash => bool) claimedMap;
+
     constructor(address meowCoinAddress_,
         uint256 airdropAmount_,
         address oracleAddress_,
@@ -45,10 +48,14 @@ contract TeslaAirdrop {
         require(input_[0] == uint256(uint160(msg.sender)), "Invalid input for user address");
         require(input_[1] == _stockQuantityThreshold, "Invalid stock price threshold for proof");
         require(input_[3] == _holdingPeriodThreshold, "Invalid holding period threshold for proof");
-
+        
+        bytes32 userHash = keccak256(abi.encodePacked(msg.sender));
+        require(!claimedMap[userHash], "Airdrop already claimed");
 
         require(_verifier.verifyProof(proof_, input_), "Failed to verify proof");
         require(_oracle.priceInUsd() > _stockPriceThreshold, "Equity under threshold");
         require(_meowCoin.transfer(msg.sender, _airdropAmount), "Failed to transfer aridrop");
+
+        claimedMap[userHash] = true;
     }
 }
