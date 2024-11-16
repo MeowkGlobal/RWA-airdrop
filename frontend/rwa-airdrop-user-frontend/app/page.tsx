@@ -17,7 +17,6 @@ import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -36,22 +35,37 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { ethers } from 'ethers';
+import { AIRDROP_CONTRACT_ABI } from '@/constants/contractABI';
 
 // const clientId = process.env.WEB3AUTH_CLIENT_ID;
 const clientId =
   'BF98f4BCXkt9o9282xQgfnfxf77U_cJqSWNF5ZtOY-aqO4SAqPpy-aE-sn9s-tw-mTnz2HE9i5Dm5l_f0BL4TPQ';
 
+// const chainConfig = {
+//   chainNamespace: CHAIN_NAMESPACES.EIP155,
+//   chainId: '0x89', // hex of 137, polygon mainnet
+//   rpcTarget: 'https://rpc.ankr.com/polygon',
+//   // Avoid using public rpcTarget in production.
+//   // Use services like Infura, Quicknode etc
+//   displayName: 'Polygon Mainnet',
+//   blockExplorerUrl: 'https://polygonscan.com',
+//   ticker: 'POL',
+//   tickerName: 'Polygon Ecosystem Token',
+//   logo: 'https://cryptologos.cc/logos/polygon-matic-logo.png',
+// };
+
 const chainConfig = {
   chainNamespace: CHAIN_NAMESPACES.EIP155,
-  chainId: '0x89', // hex of 137, polygon mainnet
-  rpcTarget: 'https://rpc.ankr.com/polygon',
+  chainId: '0xaa36a7',
+  rpcTarget: 'https://rpc.ankr.com/eth_sepolia',
   // Avoid using public rpcTarget in production.
   // Use services like Infura, Quicknode etc
-  displayName: 'Polygon Mainnet',
-  blockExplorerUrl: 'https://polygonscan.com',
-  ticker: 'POL',
-  tickerName: 'Polygon Ecosystem Token',
-  logo: 'https://cryptologos.cc/logos/polygon-matic-logo.png',
+  displayName: 'Ethereum Sepolia Testnet',
+  blockExplorerUrl: 'https://sepolia.etherscan.io',
+  ticker: 'ETH',
+  tickerName: 'Ethereum',
+  logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
 };
 
 const privateKeyProvider = new EthereumPrivateKeyProvider({
@@ -64,6 +78,15 @@ const web3AuthOptions: Web3AuthOptions = {
   privateKeyProvider,
 };
 const web3auth = new Web3Auth(web3AuthOptions);
+
+interface ZKProofResponse {
+  statusCode: number;
+  data: {
+    proof: string;
+    publicInputs: string[];
+  };
+  message: string;
+}
 
 export default function Home() {
   const router = useRouter();
@@ -256,6 +279,65 @@ export default function Home() {
     }
   };
 
+  const claimAirdrop = async (holding: {
+    symbol: string;
+    noOfShares: number;
+    lastHoldingTime: string;
+  }) => {
+    if (!provider) {
+      uiConsole('provider not initialized yet');
+      return;
+    }
+
+    try {
+      // Generate ZK Proof
+      const response = await fetch(
+        'http://localhost:3001/api/v1/generateZkProof',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            address: await RPC.getAccounts(provider),
+            stockQuantity: holding.noOfShares.toString(),
+            stockBuyTimestamp: holding.lastHoldingTime,
+          }),
+        }
+      );
+
+      const zkProofData: ZKProofResponse = await response.json();
+
+      if (response.ok) {
+        // TODO: Replace with your actual contract address and ABI
+        const contractAddress = '0x1D2A2309CE0932c438ce38b9E5412b62a87136c3';
+        const contractABI = AIRDROP_CONTRACT_ABI;
+
+        // Make contract call
+        const ethersProvider = new ethers.BrowserProvider(provider);
+        const signer = await ethersProvider.getSigner();
+
+        const contract = new ethers.Contract(
+          contractAddress,
+          contractABI,
+          signer
+        );
+
+        // Call the contract method with proof and public inputs
+        const tx = await contract.claimAirdrop(
+          zkProofData.data.proof,
+          zkProofData.data.publicInputs
+        );
+
+        await tx.wait();
+        uiConsole('Airdrop claimed successfully!');
+      }
+    } catch (error) {
+      console.error('Error claiming airdrop:', error);
+      uiConsole('Error claiming airdrop');
+    }
+  };
+
   const robinhoodButton = isRobinhoodConnected ? (
     <Button
       className="flex w-[50%] h-[50px] mx-auto mt-[5%] mb-[5%]"
@@ -298,7 +380,12 @@ export default function Home() {
                   {new Date(holding.lastHoldingTime).toLocaleDateString()}
                 </TableCell>
                 <TableCell>
-                  <Button className="bg-green-500">Avail Airdrop</Button>
+                  <Button
+                    className="bg-green-500"
+                    onClick={() => claimAirdrop(holding)}
+                  >
+                    Avail Airdrop
+                  </Button>
                 </TableCell>
               </TableRow>
             ))
