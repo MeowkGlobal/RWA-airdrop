@@ -27,45 +27,22 @@ import RPC from './ethersRPC';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { MountainIcon } from 'lucide-react';
-// import {
-//   Card,
-//   CardContent,
-//   CardDescription,
-//   CardFooter,
-//   CardHeader,
-//   CardTitle,
-// } from '@/components/ui/card';
 import { ethers } from 'ethers';
 import { AIRDROP_CONTRACT_ABI } from '@/constants/contractABI';
 
-// const clientId = process.env.WEB3AUTH_CLIENT_ID;
-const clientId =
-  'BF98f4BCXkt9o9282xQgfnfxf77U_cJqSWNF5ZtOY-aqO4SAqPpy-aE-sn9s-tw-mTnz2HE9i5Dm5l_f0BL4TPQ';
-
-// const chainConfig = {
-//   chainNamespace: CHAIN_NAMESPACES.EIP155,
-//   chainId: '0x89', // hex of 137, polygon mainnet
-//   rpcTarget: 'https://rpc.ankr.com/polygon',
-//   // Avoid using public rpcTarget in production.
-//   // Use services like Infura, Quicknode etc
-//   displayName: 'Polygon Mainnet',
-//   blockExplorerUrl: 'https://polygonscan.com',
-//   ticker: 'POL',
-//   tickerName: 'Polygon Ecosystem Token',
-//   logo: 'https://cryptologos.cc/logos/polygon-matic-logo.png',
-// };
+const clientId = process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID;
 
 const chainConfig = {
   chainNamespace: CHAIN_NAMESPACES.EIP155,
-  chainId: '0xaa36a7',
-  rpcTarget: 'https://rpc.ankr.com/eth_sepolia',
+  chainId: '0x8274f',
+  rpcTarget: 'https://sepolia-rpc.scroll.io',
   // Avoid using public rpcTarget in production.
   // Use services like Infura, Quicknode etc
-  displayName: 'Ethereum Sepolia Testnet',
-  blockExplorerUrl: 'https://sepolia.etherscan.io',
+  displayName: 'Scroll Sepolia Testnet',
+  blockExplorerUrl: 'https://sepolia.scrollscan.com/',
   ticker: 'ETH',
   tickerName: 'Ethereum',
-  logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+  logo: 'https://scroll.io/static/media/Scroll_FullLogo.f99e4b7ab52f474105da.png',
 };
 
 const privateKeyProvider = new EthereumPrivateKeyProvider({
@@ -110,7 +87,6 @@ export default function Home() {
         sessionStorage.removeItem('loggedIn');
       }
       try {
-        console.log('init started');
         const adapters = await getDefaultExternalAdapters({
           options: web3AuthOptions,
         });
@@ -120,13 +96,10 @@ export default function Home() {
         await web3auth.initModal();
         const web3authProvider = web3auth.provider;
         setProvider(web3authProvider);
-        console.log('web3auth started');
 
         if (web3auth.connected && web3authProvider) {
           setLoggedIn(true);
           await checkRobinhoodConnection(web3authProvider);
-
-          console.log('checkRobinhoodConnection done');
 
           const rhUserId = sessionStorage.getItem('rhUserId');
           if (rhUserId) {
@@ -152,11 +125,6 @@ export default function Home() {
     }
   };
 
-  // const getUserInfo = async () => {
-  //   const user = await web3auth.getUserInfo();
-  //   uiConsole(user);
-  // };
-
   const logout = async () => {
     await web3auth.logout();
     setProvider(null);
@@ -168,44 +136,6 @@ export default function Home() {
   const redirectToRobinhood = () => {
     router.push('/rh/login');
   };
-
-  // // Check the RPC file for the implementation
-  // const getAccounts = async () => {
-  //   if (!provider) {
-  //     uiConsole('provider not initialized yet');
-  //     return;
-  //   }
-  //   const address = await RPC.getAccounts(provider);
-  //   uiConsole(address);
-  // };
-
-  // const getBalance = async () => {
-  //   if (!provider) {
-  //     uiConsole('provider not initialized yet');
-  //     return;
-  //   }
-  //   const balance = await RPC.getBalance(provider);
-  //   uiConsole(balance);
-  // };
-
-  // const signMessage = async () => {
-  //   if (!provider) {
-  //     uiConsole('provider not initialized yet');
-  //     return;
-  //   }
-  //   const signedMessage = await RPC.signMessage(provider);
-  //   uiConsole(signedMessage);
-  // };
-
-  // const sendTransaction = async () => {
-  //   if (!provider) {
-  //     uiConsole('provider not initialized yet');
-  //     return;
-  //   }
-  //   uiConsole('Sending Transaction...');
-  //   const transactionReceipt = await RPC.sendTransaction(provider);
-  //   uiConsole(transactionReceipt);
-  // };
 
   function uiConsole(...args: unknown[]): void {
     const el = document.querySelector('#console>p');
@@ -234,7 +164,6 @@ export default function Home() {
   const checkRobinhoodConnection = async (currentProvider: IProvider) => {
     try {
       const address = await RPC.getAccounts(currentProvider);
-      console.log('checkRobinhoodConnection address', address);
       const response = await fetch('/api/check-robinhood-connection', {
         method: 'POST',
         headers: {
@@ -259,7 +188,6 @@ export default function Home() {
   ) => {
     try {
       const address = await RPC.getAccounts(currentProvider);
-      console.log('createRobinhoodConnection address', address);
       const response = await fetch('/api/create-robinhood-connection', {
         method: 'POST',
         headers: {
@@ -310,7 +238,7 @@ export default function Home() {
 
       if (response.ok) {
         // TODO: Replace with your actual contract address and ABI
-        const contractAddress = '0x1D2A2309CE0932c438ce38b9E5412b62a87136c3';
+        const contractAddress = '0xC3bf173b22F70D0D9508D1181882a241d33550fB';
         const contractABI = AIRDROP_CONTRACT_ABI;
 
         // Make contract call
@@ -419,47 +347,21 @@ export default function Home() {
       </header>
       {robinhoodButton}
       {holdingsTable}
-      {/* <div className="justify-center mt-20">
-        <Card className="w-full">
-          <CardHeader className="flex justify-center text-center">
-            <CardTitle>Logged in user details</CardTitle>
-            <CardDescription>User information</CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-between mt-10">
-            <Button onClick={getUserInfo}>Get User Info</Button>
-            <Button onClick={getAccounts}>Get Accounts</Button>
-            <Button onClick={getBalance}>Get Balance</Button>
-            <Button onClick={signMessage}>Sign Message</Button>
-            <Button onClick={sendTransaction}>Send Transaction</Button>
-          </CardContent>
-          <CardFooter></CardFooter>
-        </Card>
-        <Card className="w-1/3 mt-10 mx-auto">
-          <CardHeader className="flex justify-center text-center">
-            <CardTitle>Debug Console</CardTitle>
-            <CardDescription></CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <div id="console" style={{ whiteSpace: 'pre-line' }}>
-              <p style={{ whiteSpace: 'pre-line' }}></p>
-            </div>
-          </CardContent>
-          <CardFooter></CardFooter>
-        </Card>
-      </div> */}
     </>
   );
 
   const unloggedInView = (
-    <header className="flex h-20 w-full shrink-0 items-center px-4 md:px-6">
-      <Link href="#" className="mr-6 hidden lg:flex" prefetch={false}>
-        <MountainIcon className="h-6 w-6" />
-        <h1 className="ml-2">MeokGlobal</h1>
-      </Link>
-      <div className="ml-auto flex gap-2">
-        <Button onClick={login}>Login</Button>
-      </div>
-    </header>
+    <div className="min-h-screen bg-[url('/background.png')] bg-cover bg-center">
+      <header className="flex h-20 w-full shrink-0 items-center px-4 md:px-6 bg-white/80">
+        <Link href="#" className="mr-6 hidden lg:flex" prefetch={false}>
+          <MountainIcon className="h-6 w-6" />
+          <h1 className="ml-2">MeowkGlobal</h1>
+        </Link>
+        <div className="ml-auto flex gap-2">
+          <Button onClick={login}>Login</Button>
+        </div>
+      </header>
+    </div>
   );
 
   return (
