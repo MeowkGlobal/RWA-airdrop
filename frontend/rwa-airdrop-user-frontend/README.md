@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RWA Airdrop User Frontend
 
-## Getting Started
+A Next.js-based frontend application for managing real-world asset airdrops with Web3Auth integration and Robinhood account connectivity.
 
-First, run the development server:
+## Features
+
+- Web3Auth Integration for wallet authentication
+- Robinhood account connection (mocked for now)
+- Holdings management and display
+- ZK Proof generation for airdrop claims
+- Responsive UI with Tailwind CSS
+
+## Tech Stack
+
+- Next.js 14
+- TypeScript
+- Tailwind CSS
+- Web3Auth
+- Ethers.js
+- Prisma (SQLite)
+- shadcn/ui components
+
+## Prerequisites
+
+- Node.js 18+
+- npm/yarn/pnpm
+- SQLite
+
+## Installation
+
+1. Clone the repository
+2. Install dependencies:
 
 ```bash
-npm run dev
+npm install
 # or
-yarn dev
+yarn install
 # or
-pnpm dev
+pnpm install
 # or
+bun install
+```
+
+3. Set up environment variables:
+
+Create a `.env.local` file with:
+
+```bash
+NEXT_PUBLIC_WEB3AUTH_CLIENT_ID='YOUR_CLIENT_ID'
+DATABASE_URL='YOUR_DATABASE_URL'
+```
+
+4. Initialize the database:
+
+```bash
+bunx prisma generate
+bunx prisma migrate dev
+```
+
+## Development
+
+Run the development server:
+
+```bash
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## API Endpoints
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `/api/rh/auth` - Robinhood authentication
+- `/api/rh/signup` - User registration
+- `/api/get-holdings` - Fetch user holdings
+- `/api/check-robinhood-connection` - Verify Robinhood connection
+- `/api/create-robinhood-connection` - Create new Robinhood connection
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Database Schema
 
-## Learn More
+The application uses three main models:
 
-To learn more about Next.js, take a look at the following resources:
+1. User - Stores user authentication details
+2. UserHolding - Manages user's stock holdings
+3. UserRegistry - Tracks wallet addresses and Robinhood connections
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Contributing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
